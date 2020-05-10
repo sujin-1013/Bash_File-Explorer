@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Author : Seungho Song(KWU. Software. 2019203037)
-# Last Update : 2020. 05. 07
+# Last Update : 2020. 05. 10
 
 #Colors
 #fg(..;**;..) : 30-black / 31-red / 32-green / 33-brown / 34-blue
