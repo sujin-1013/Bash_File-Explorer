@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Author : Seungho Song(KWU. Software. 2019203037)
-# Last Update : 2020. 05. 10
+# Last Update : 2020. 05. 11
 
 #Colors
 #fg(..;**;..) : 30-black / 31-red / 32-green / 33-brown / 34-blue
@@ -13,6 +13,7 @@ declare BLUE='\033[0;34;47m'
 declare GREEN='\033[0;32;47m'
 declare BLACK='\033[0;30m'
 declare NC='\033[0m'
+declare BROWN='\033[2;33;47m'
 
 #background with black foreground
 declare GRAYB='\033[0;30;47m'
@@ -23,6 +24,11 @@ declare UP=[A
 declare DOWN=[B
 declare RIGHT=[C
 declare LEFT=[D
+
+#data arrays
+declare -a D_array1; declare -a D_array2; declare -a D_array3
+declare -a X_array1; declare -a X_array2; declare -a X_array3
+declare -a F_array1; declare -a F_array2; declare -a F_array3
 
 # Basic Utility functions
 
@@ -97,19 +103,19 @@ function UI_Design() {
 # Current pwd
 function Current_pwd() {
     tput cup 1 1
-    printf "${GRAYB}Current path: ${PWD}${NC}" 
+    printf "${BROWN}Current path: ${PWD}${NC}" 
 }
 
-#Print Current Path
+#Print Current Path (List ver.)
 function Print_Left() {
     declare -i index
     declare -i temp
     declare -i flag
     declare -i flag2
     
-    declare -a D_array1; declare -a D_array2; declare -a D_array3
-    declare -a X_array1; declare -a X_array2; declare -a X_array3
-    declare -a F_array1; declare -a F_array2; declare -a F_array3
+    unset D_array1; unset D_array2; unset D_array3;
+    unset X_array1; unset X_array2; unset X_array3;
+    unset F_array1; unset F_array2; unset F_array3;
 
     for (( i=3;i<=22;i++ )) #save in each array
     do
@@ -178,9 +184,7 @@ function Print_Left() {
     for (( i=0;i<${#F_array1[@]};i++)) #Normal files print
     do
         printf "${GRAYB}" #for normal files
-        #if [ $flag ]; then
-        #   flag2=2
-        #fi
+
         num=${flag2:=$flag}+$i+1
         tput cup ${num} 1
         echo "${F_array1[$i]}"
@@ -193,8 +197,31 @@ function Print_Left() {
         printf "${NC}" # End of default fg color
     done
 }
- #name=`echo "${var}" | cut -d " " -f 9`
- #lvar=`ls -alh | tr -s " " | sort -k 9 | tail -1`
+
+# Print Current Path (Tree ver.)
+
+#Is directory have any sub-files or sub-directory
+function IsitExist() { # $1:want to find directory 1: true 2: false
+    files=(${1}/*)
+    if [ ${#files[@]} -gt 0 ]; then
+        return 1
+    else    return 2
+    fi
+}
+
+function PrintTree() {
+
+}
+
+function Print_Right() {
+    curdir=`pwd | rev | cut -d "/" -f 1 | rev`
+
+    tput cup 3 42
+    echo "${curdir}"
+    if [ $(IsitExist curdir)]
+   
+}
+
 # Statement bar
 function Statement() {
     printf "${GRAYB}"
@@ -218,5 +245,6 @@ function Statement() {
 UI_Design
 Current_pwd
 Print_Left
+Print_Right
 Statement
-tput cup 26 0
+tput cup 27 0
