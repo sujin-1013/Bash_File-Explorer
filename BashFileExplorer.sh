@@ -33,7 +33,6 @@ function Blank() { #Make blanks $1 times
     done
 }
 
-
 function Repeat_Char() { # Repeat character $2 by $1 times
     for (( i=0; i<$1 ; i++))
     do
@@ -78,6 +77,7 @@ function BackGround() { # $1: startline / $2: howmanylines? /$3: color
         echo -e "$3$(Blank 83)${NC}"
     done
 }
+
 # UI Design
 function UI_Design() {
     tput clear
@@ -94,7 +94,6 @@ function UI_Design() {
     Repeat_Char 83 "-"
 }
 
-
 # Current pwd
 function Current_pwd() {
     tput cup 1 1
@@ -105,56 +104,119 @@ function Current_pwd() {
 function Print_Left() {
     declare -i index
     declare -i temp
-    for (( i=3;i<=22;i++))
+    declare -i flag
+    declare -i flag2
+    
+    declare -a D_array1; declare -a D_array2; declare -a D_array3
+    declare -a X_array1; declare -a X_array2; declare -a X_array3
+    declare -a F_array1; declare -a F_array2; declare -a F_array3
+
+    for (( i=3;i<=22;i++ )) #save in each array
     do
         temp=$i
         index=temp-1
         var=`ls -alh | tr -s " " | sort -k 9 | head -"${index}" | tail -1`
         lvar=`ls -alh | tr -s " " | sort -k 9 | tail -1`
         findvar=`ls -alh | tr -s " " | sort -k 9 | head -"${index}" | tail -1 | cut -d " " -f 9`
+        name=`echo "${var}" | cut -d " " -f 9`
+        access=`echo "${var}" | cut -d " " -f 1`
+        size=`echo "${var}" | cut -d " " -f 5`
         fvar="${PWD}/${findvar}"
         lastlist="${PWD}/${lvar}"
-        tput cup $i 1 #file list - name
-        #coloring
+
         if [ -d "${fvar}" ]; then #for Directories
-            printf "${BLUE}"
+            D_array1+=(${name}); D_array2+=(${access}); D_array3+=(${size})
         elif [ -x "${fvar}" ]; then #for Exectue files
-            printf "${GREEN}"
-        else
-            printf "${GRAYB}" #for normal files
+            X_array1+=(${name}); X_array2+=(${access}); X_array3+=(${size})
+        else #for normal files
+            F_array1+=(${name}); F_array2+=(${access}); F_array3+=(${size})
         fi
-
-        echo "${var}" | cut -d " " -f 9
-
-        tput cup $i 18 #file list - access
-        echo "${var}" | cut -d " " -f 1
-
-        tput cup $i 35 #file list - file size
-        if [ $index -eq 2 ] || [ $index -eq 3 ]
-        then
-            echo "-"
-        else
-            echo "${var}" | cut -d " " -f 5
-        fi
-
-        printf "${NC}" # End of default fg color
-        
-        if [ "${var}" = "${lvar}" ]; then
+        if [ "${var}" = "${lvar}" ]; then #if it is the last line, get the end
             break;
         fi
     done
-}
 
+    for (( i=0;i<${#D_array1[@]};i++)) #Directory Print
+    do
+        printf "${BLUE}"
+        declare -i var=$i
+        declare -i num=$i+3
+
+        tput cup ${num} 1
+        echo "${D_array1[$i]}"
+
+        tput cup ${num} 18
+        echo "${D_array2[$i]}"
+
+        tput cup ${num} 35
+        if [ "${D_array1[$i]}" = "." ] || [ "${D_array1[$i]}" = ".." ]
+        then
+            echo "-"
+        else
+            echo "${D_array3[$i]}"
+        fi
+        printf "${NC}" # End of default fg color
+        flag=$num
+    done
+
+    for (( i=0;i<${#X_array1[@]};i++)) #Execute file print
+    do
+        printf "${GREEN}" #for Exectue files
+        num=${flag:=2}+$i+1
+        tput cup ${num} 1
+        echo "${X_array1[$i]}"
+
+        tput cup ${num} 18
+        echo "${X_array2[$i]}"
+
+        tput cup ${num} 35
+        echo "${X_array3[$i]}"
+        printf "${NC}" # End of default fg color
+        flag2=$num
+    done
+
+    for (( i=0;i<${#F_array1[@]};i++)) #Normal files print
+    do
+        printf "${GRAYB}" #for normal files
+        #if [ $flag ]; then
+        #   flag2=2
+        #fi
+        num=${flag2:=$flag}+$i+1
+        tput cup ${num} 1
+        echo "${F_array1[$i]}"
+
+        tput cup ${num} 18
+        echo "${F_array2[$i]}"
+
+        tput cup ${num} 35
+        echo "${F_array3[$i]}"
+        printf "${NC}" # End of default fg color
+    done
+}
+ #name=`echo "${var}" | cut -d " " -f 9`
+ #lvar=`ls -alh | tr -s " " | sort -k 9 | tail -1`
 # Statement bar
 function Statement() {
+    printf "${GRAYB}"
     tput cup 24 5
-    tput cup 24 17
-    tput cup 24 
-    tput cup
+        dirlen=`ls -al | grep ^d | wc -l`
+        declare -i dirnum=${dirlen}-2 # extract . and ..
+        echo "Directory : ${dirnum}" 
+    
+    tput cup 24 25
+        filelen=`ls -al | grep ^- | wc -l`
+        echo "File : ${filelen}"
+
+    tput cup 24 43
+        directory_size=`du -sh | awk '{print $1}'`
+        echo "Current Directory Size : ${directory_size}"
+    
+    printf "${NC}"
 }
 
 #Main Command
 UI_Design
 Current_pwd
 Print_Left
+Statement
 tput cup 26 0
