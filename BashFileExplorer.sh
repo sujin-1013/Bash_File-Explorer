@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Author : Seungho Song(KWU. Software. 2019203037)
-# Last Update : 2020. 05. 11
+# Last Update : 2020. 05. 11 19:53
 
 #Colors
 #fg(..;**;..) : 30-black / 31-red / 32-green / 33-brown / 34-blue
@@ -29,8 +29,26 @@ declare LEFT=[D
 declare -a D_array1; declare -a D_array2; declare -a D_array3
 declare -a X_array1; declare -a X_array2; declare -a X_array3
 declare -a F_array1; declare -a F_array2; declare -a F_array3
+declare -a Total
 
 # Basic Utility functions
+
+function Coloring() {
+    printf "$1"; echo "$2"; printf "${NC}"
+}
+
+function Tree() { 
+    declare -ar treearray=("├" "└" "│" "─")
+    printf "${GRAYB}"
+    case "$1" in
+        1) printf "${treearray[0]}" ;;
+        2) printf "${treearray[1]}" ;;
+        3) printf "${treearray[2]}" ;;
+        4) printf "${treearray[3]}" ;;
+        *) echo "Error: Invalid answer." ;;
+    esac
+    printf "${NC}"
+}
 
 function Blank() { #Make blanks $1 times
     for (( i=0; i<$1 ; i++))
@@ -110,12 +128,13 @@ function Current_pwd() {
 function Print_Left() {
     declare -i index
     declare -i temp
-    declare -i flag
-    declare -i flag2
+    local  -i flag
+    local -i flag2
     
     unset D_array1; unset D_array2; unset D_array3;
     unset X_array1; unset X_array2; unset X_array3;
     unset F_array1; unset F_array2; unset F_array3;
+    unset Total
 
     for (( i=3;i<=22;i++ )) #save in each array
     do
@@ -141,6 +160,9 @@ function Print_Left() {
             break;
         fi
     done
+
+    Total+=(${D_array1[@]}); Total+=(${X_array1[@]}); Total+=(${F_array1[@]})
+    #echo "${Total[0]}"
 
     for (( i=0;i<${#D_array1[@]};i++)) #Directory Print
     do
@@ -200,16 +222,62 @@ function Print_Left() {
 
 # Print Current Path (Tree ver.)
 
+function STR_to_pwd() { # $1: aimed directory in curdir
+    #For example, $1: "Dir3"
+    echo "${PWD}/$1"
+}
+
 #Is directory have any sub-files or sub-directory
 function IsitExist() { # $1:want to find directory 1: true 2: false
-    files=(${1}/*)
-    if [ ${#files[@]} -gt 0 ]; then
+
+    local curpath_d="$(STR_to_pwd $1)"
+    local curpath_f="$(STR_to_pwd $1)/*"
+
+    
+    if [ -d ${curpath_d} ]; then
         return 1
-    else    return 2
+    elif [ -f ${curpath_f} ]; then
+        return 1
+    else return 0
     fi
 }
 
-function PrintTree() {
+
+function Print_Tree() { #$1: aimed directory in curdir
+    local -i axis_x; local -i axis_y
+    
+    local -i r_line=4 ##temporary declared 4 -> must be modified soon
+    # Tree -> 1: ├  2: └ 3: │ 4:─ 
+    for (( i=0;i<${#D_array1[@]};i++ ))
+    do
+        if [ $i -ge 2 ]; then
+            tput cup $r_line 42
+            Tree "1"; Tree "4"
+            Coloring $BLUE ${D_array1[$i]}
+            if [ "$(IsitExist ${D_array1[$i]})" = "1" ] #there're some error :(
+            then
+                echo "Hurray!!!!!!!!!!!!!!!!!1"
+                #Print_Tree #...need to make some functions as buffer
+            fi
+            r_line=`expr $r_line + 1`
+        fi
+    done
+
+    for (( i=0;i<${#X_array1[@]};i++ ))
+    do
+        tput cup $r_line 42
+        Tree "1"; Tree "4"
+        Coloring $GREEN ${X_array1[$i]}
+        r_line=`expr $r_line + 1`
+    done
+
+    for (( i=0;i<${#F_array1[@]};i++ ))
+    do
+        tput cup $r_line 42
+        Tree "1"; Tree "4"
+        Coloring $GRAYB ${F_array1[$i]}
+        r_line=`expr $r_line + 1`
+    done
 
 }
 
@@ -217,8 +285,10 @@ function Print_Right() {
     curdir=`pwd | rev | cut -d "/" -f 1 | rev`
 
     tput cup 3 42
-    echo "${curdir}"
-    if [ $(IsitExist curdir)]
+    Coloring $BLUE $curdir
+    Print_Tree
+    #if [ $(IsitExist curdir)]
+    
    
 }
 
