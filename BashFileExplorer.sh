@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Author : Seungho Song(KWU. Software. 2019203037)
-# Last Update : 2020. 05. 11 19:53
+# Last Update : 2020. 05. 12 04:56
 
 #Colors
 #fg(..;**;..) : 30-black / 31-red / 32-green / 33-brown / 34-blue
@@ -102,6 +102,10 @@ function BackGround() { # $1: startline / $2: howmanylines? /$3: color
     done
 }
 
+
+###################################################################
+
+
 # UI Design
 function UI_Design() {
     tput clear
@@ -123,6 +127,8 @@ function Current_pwd() {
     tput cup 1 1
     printf "${BROWN}Current path: ${PWD}${NC}" 
 }
+
+#######################################################################
 
 #Print Current Path (List ver.)
 function Print_Left() {
@@ -220,44 +226,79 @@ function Print_Left() {
     done
 }
 
-# Print Current Path (Tree ver.)
+
+############################################################################
+
 
 function STR_to_pwd() { # $1: aimed directory in curdir
-    #For example, $1: "Dir3"
-    echo "${PWD}/$1"
-}
-
-#Is directory have any sub-files or sub-directory
-function IsitExist() { # $1:want to find directory 1: true 2: false
-
-    local curpath_d="$(STR_to_pwd $1)"
-    local curpath_f="$(STR_to_pwd $1)/*"
-
-    
-    if [ -d ${curpath_d} ]; then
-        return 1
-    elif [ -f ${curpath_f} ]; then
-        return 1
-    else return 0
+    if [ "$1" = "pwd" ]; then
+        echo "${PWD}"
+    else
+    echo "${PWD}/${1}"
     fi
 }
 
+#Is directory have any sub-files or sub-directory
+function IsitExist() { # $1:want to find directory 1: true 0: false
 
-function Print_Tree() { #$1: aimed directory in curdir
-    local -i axis_x; local -i axis_y
+    #local curpath_d="$(STR_to_pwd $1)"
+    local curpath="$(STR_to_pwd $1)"
+    local -a arr=(`find ${curpath} -maxdepth 0 -type d | find ${curpath} -type f`)
     
-    local -i r_line=4 ##temporary declared 4 -> must be modified soon
+    if [ ${#arr[@]} -gt 0 ]; then echo "1"
+    else echo "0"
+    fi
+}
+
+#function Buffer_Tree() { #Temporary buffer for super_tree
+    # $1= D_array1
+    #declare -a buffer
+    #Sbuffer+=(`echo ${!1[@]}`)
+
+    #declare -i buffer_num=${#buffer[@]}
+
+    #case "$1" in
+    #1 | D | d)
+    #declare -a buffer_d
+    #2 | X | x)
+   # 3 | F | f)
+    #*)
+    
+#}
+
+function ls_tree() { # $1 : directory name in string type
+    declare -a list=(`ls -a $(STR_to_pwd $1)| sort -d`)
+
+    for i in ${list[@]}
+    do
+        j=`expr $i + 2`
+        if [ "$j" = "${#list[@]}" ]; then break;
+        elif [ -d "${j}" ]; then Coloring $BLUE $j
+        elif [ -x "${j}" ]; then Coloring $GREEN $j
+        else Coloring $GRAYB $j
+        fi
+    done
+}
+
+# Print Current Path (Tree ver.)
+function Print_Tree() { #$1: aimed directory in curdir $2:start line
+    local -i r_line=4 #temporary declared 4 -> must be modified soon
+    curdir=`echo "$(STR_to_pwd $1)" | rev | cut -d "/" -f 1 | rev`
+    Coloring $BLUE $curdir
     # Tree -> 1: ├  2: └ 3: │ 4:─ 
     for (( i=0;i<${#D_array1[@]};i++ ))
+    #for i in ${D_array1[@]}
     do
         if [ $i -ge 2 ]; then
             tput cup $r_line 42
             Tree "1"; Tree "4"
             Coloring $BLUE ${D_array1[$i]}
-            if [ "$(IsitExist ${D_array1[$i]})" = "1" ] #there're some error :(
+            #test=$(IsitExist ${D_array1[$i]})
+
+            if [ "$(IsitExist ${D_array1[$i]})" = "1" ]
             then
-                echo "Hurray!!!!!!!!!!!!!!!!!1"
-                #Print_Tree #...need to make some functions as buffer
+                #Buffer_Tree 
+               ls_tree ${D_array1[$i]} #...need to make some functions as buffer
             fi
             r_line=`expr $r_line + 1`
         fi
@@ -282,12 +323,9 @@ function Print_Tree() { #$1: aimed directory in curdir
 }
 
 function Print_Right() {
-    curdir=`pwd | rev | cut -d "/" -f 1 | rev`
-
     tput cup 3 42
-    Coloring $BLUE $curdir
-    Print_Tree
-    #if [ $(IsitExist curdir)]
+    Print_Tree $pwd
+    
     
    
 }
@@ -311,7 +349,8 @@ function Statement() {
     printf "${NC}"
 }
 
-#Main Command
+### Main Command ###
+
 UI_Design
 Current_pwd
 Print_Left
