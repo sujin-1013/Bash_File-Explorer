@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Author : Seungho Song(KWU. Software. 2019203037)
-# Last Update : 2020. 05. 12 04:56
+# Last Update : 2020. 05. 13 06:16
 
 #Colors
 #fg(..;**;..) : 30-black / 31-red / 32-green / 33-brown / 34-blue
@@ -20,10 +20,13 @@ declare GRAYB='\033[0;30;47m'
 declare SBLUEB='\033[0;30;46m' #skyblue bg with black fg
 
 #Cursors
-declare UP=[A
-declare DOWN=[B
-declare RIGHT=[C
-declare LEFT=[D
+declare UP=[A
+declare DOWN=[B
+declare RIGHT=[C
+declare LEFT=[D
+declare ENTER=""
+
+
 
 #data arrays
 declare -a D_array1; declare -a D_array2; declare -a D_array3
@@ -63,6 +66,8 @@ function Repeat_Char() { # Repeat character $2 by $1 times
         printf "${GRAYB}$2${NC}"
     done
 }
+
+
 
 # Functions for UI Design
 
@@ -243,91 +248,161 @@ function IsitExist() { # $1:want to find directory 1: true 0: false
 
     #local curpath_d="$(STR_to_pwd $1)"
     local curpath="$(STR_to_pwd $1)"
-    local -a arr=(`find ${curpath} -maxdepth 0 -type d | find ${curpath} -type f`)
-    
-    if [ ${#arr[@]} -gt 0 ]; then echo "1"
+    local -a arr=(`ls -alF ${curpath} | grep ^d | rev | cut -d " " -f 1 | rev`)
+    arr+=(`ls -alF ${curpath} | grep *$ | rev | cut -d " " -f 1 | rev`)
+    arr+=(`ls -alF ${curpath} | grep ^- | grep -v *$ | rev | cut -d " " -f 1 | rev`)
+
+    if [ ${#arr[@]} -gt 2 ]; then echo "1"
     else echo "0"
     fi
 }
 
-#function Buffer_Tree() { #Temporary buffer for super_tree
-    # $1= D_array1
-    #declare -a buffer
-    #Sbuffer+=(`echo ${!1[@]}`)
-
-    #declare -i buffer_num=${#buffer[@]}
-
-    #case "$1" in
-    #1 | D | d)
-    #declare -a buffer_d
-    #2 | X | x)
-   # 3 | F | f)
-    #*)
+function move_xypos() { # $1: xpos $2: ypos $3:howmany x $3:howmany y
     
+    declare -i x=`expr $1 + $3`
+    declare -i y=`expr $2 + $4`
+    tput cup $x $y
+    #echo "test"
+}
+
+function Indent() { # $1: counter
+    for(( i=0;i<$1;i++ ))
+    do
+        printf "$(Tree "3")  "
+    done
+}
+
+declare -i tree_counter=0
+declare -i x_counter=3
+declare -i y_counter=41
+declare -i xpos=3
+
+# function Print_Root() { # $1:xpos $2:ypos $3: finishline
+#     local -i temp_x=`expr $1 + 2`; local -i temp_y=$2
+#     local -i howmany=`expr $3 - $temp_x`
+#     howmany=`expr $howmany + 1`
+#     for (( i=0;i<$howmany;i++ ))
+#     do
+#         tput cup $temp_x $temp_y
+#         printf "$GRAYB" ; printf "│" ; printf "$NC"
+#         temp_x=`expr $temp_x + 1`
+#     done
 #}
 
-function ls_tree() { # $1 : directory name in string type
-    declare -a list=(`ls -a $(STR_to_pwd $1)| sort -d`)
-
-    for i in ${list[@]}
-    do
-        j=`expr $i + 2`
-        if [ "$j" = "${#list[@]}" ]; then break;
-        elif [ -d "${j}" ]; then Coloring $BLUE $j
-        elif [ -x "${j}" ]; then Coloring $GREEN $j
-        else Coloring $GRAYB $j
-        fi
-    done
-}
-
 # Print Current Path (Tree ver.)
-function Print_Tree() { #$1: aimed directory in curdir $2:start line
-    local -i r_line=4 #temporary declared 4 -> must be modified soon
-    curdir=`echo "$(STR_to_pwd $1)" | rev | cut -d "/" -f 1 | rev`
-    Coloring $BLUE $curdir
+function ls_tree() { # $1 : directory name in string type $2:x axls $3: y axls
+    local testvar=$(STR_to_pwd $1)
+    cd ${testvar}
+    local -a list_d=(`ls -al ${testvar}| grep ^d | rev | cut -d " " -f 1 |rev`) 
+    local -a list_x=(`ls -alF ${testvar}| grep *$ | rev | cut -d " " -f 1 | rev`)
+    local -a list_f=(`ls -alF ${testvar}| grep ^- | grep -v *$ | rev | cut -d " " -f 1 | rev`)
+    local -a list_total=()
+    list_total+=(${list_d[@]}); list_total+=(${list_x[@]}); list_total+=(${list_f[@]});
+    local -i ypos=$3
+    local -i totalnum=`expr ${#list_d[@]} + ${#list_x[@]} + ${#list_f[@]}`
+    local -i sub_xpos;local -i sub_ypos; local -i i
+    totalnum=`expr $totalnum - 2` # ignore "." and ".." dir
+     
+    move_xypos $xpos $ypos 0 0
+    if [ "$1" = "pwd" ]; then Coloring $BLUE "${PWD##*/}"
+    else
+        Coloring $BLUE $1 
+    fi
+
+    ####################################################################################
+    #local -a inner_arr=(`find `)
+    # if [ $totalnum -gt 1 ]; then
+    #     Print_Root $xpos $ypos $finishline
+    # fi
+
     # Tree -> 1: ├  2: └ 3: │ 4:─ 
-    for (( i=0;i<${#D_array1[@]};i++ ))
-    #for i in ${D_array1[@]}
+    for (( i=2;i<${#list_d[@]};i++ ))
     do
-        if [ $i -ge 2 ]; then
-            tput cup $r_line 42
-            Tree "1"; Tree "4"
-            Coloring $BLUE ${D_array1[$i]}
-            #test=$(IsitExist ${D_array1[$i]})
-
-            if [ "$(IsitExist ${D_array1[$i]})" = "1" ]
-            then
-                #Buffer_Tree 
-               ls_tree ${D_array1[$i]} #...need to make some functions as buffer
+        lastindex_d=`expr ${#list_d[@]} - 1`
+        lastindex_total=`expr ${#list_total[@]} - 1`
+        if [ "${list_d[$i]}" = "${list_d[$lastindex_d]}" ]; then
+            if [ "$xpos" -ge "22" ]; then break
+            else
+                move_xypos $xpos $ypos 1 0; xpos=`expr $xpos + 1`; Tree "2"; Tree "4"
             fi
-            r_line=`expr $r_line + 1`
+        elif [ "${list_d[$i]}" != "${total_list[$lastindex_total]}" ]; then
+            if [ "$xpos" -ge "22" ]; then break
+            else
+                move_xypos $xpos $ypos 1 0; xpos=`expr $xpos + 1`; Tree "1"; Tree "4"
+            fi
+        else
+            if [ "$xpos" -ge "22" ]; then break
+            else
+            move_xypos $xpos $ypos 1 0; xpos=`expr $xpos + 1`; Tree "1"; Tree "4"
+            fi
         fi
+        #Coloring $BLUE ${list_d[$i]}
+        local testvarvar=$(IsitExist ${list_d[$i]})
+        while [ true ]
+        do
+            if [ "$(IsitExist ${list_d[$i]})" = "0" ]; then
+                Coloring $BLUE ${list_d[$i]}
+                declare -i finishline=$xpos
+                break
+            else
+                sub_xpos=`expr $xpos + 0`
+                sub_ypos=`expr $ypos + 2`
+                # #printf "  "
+                #counter=`expr $counter + 1`
+                ls_tree ${list_d[$i]} $xpos $sub_ypos
+                #counter=`expr $counter - 1`
+                break
+            fi
+        done
+        # move_xypos $xpos $ypos 1 0
+        
+        
+        
+        
     done
 
-    for (( i=0;i<${#X_array1[@]};i++ ))
+    for (( i=0;i<${#list_x[@]};i++ ))
     do
-        tput cup $r_line 42
-        Tree "1"; Tree "4"
-        Coloring $GREEN ${X_array1[$i]}
-        r_line=`expr $r_line + 1`
+        lastindex_x=`expr ${#list_x[@]} - 1`
+        if [ "$xpos" -ge "22" ]; then break
+        else
+            if [ "${list_x[$i]}" = "${list_x[$lastindex_x]}" ]; then
+                move_xypos $xpos $ypos 1 0; xpos=`expr $xpos + 1`; Tree "2"; Tree "4"
+            elif [ "${list_x[$i]}" != "${total_list[$lastindex_total]}" ]; then
+                move_xypos $xpos $ypos 1 0; xpos=`expr $xpos + 1`; Tree "1"; Tree "4"
+            else move_xypos $xpos $ypos 1 0; xpos=`expr $xpos + 1`; Tree "1"; Tree "4"
+            fi
+        fi
+        Coloring $GREEN ${list_x[$i]}
+       # move_xypos $xpos $ypos 1 0
+        #xpos=`expr $xpos + 1`
+        
     done
 
-    for (( i=0;i<${#F_array1[@]};i++ ))
+    for (( i=0;i<${#list_f[@]};i++ ))
     do
-        tput cup $r_line 42
-        Tree "1"; Tree "4"
-        Coloring $GRAYB ${F_array1[$i]}
-        r_line=`expr $r_line + 1`
+        lastindex_f=`expr ${#list_f[@]} - 1`
+        if [ "$xpos" -ge "22" ]; then break
+        else
+            if [ "${list_f[$i]}" = "${list_f[$lastindex_f]}" ]; then
+                move_xypos $xpos $ypos 1 0; xpos=`expr $xpos + 1`; Tree "2"; Tree "4"
+            else move_xypos $xpos $ypos 1 0; xpos=`expr $xpos + 1`; Tree "1"; Tree "4"
+            fi
+        fi
+        Coloring $GRAYB ${list_f[$i]}
+        #move_xypos $xpos $ypos 1 0
+        #xpos=`expr $xpos + 1`
+        
     done
-
+    cd ..
 }
+
+
 
 function Print_Right() {
-    tput cup 3 42
-    Print_Tree $pwd
+     tput cup 3 42
+     ls_tree "pwd" 3 42
     
-    
-   
 }
 
 # Statement bar
@@ -356,4 +431,13 @@ Current_pwd
 Print_Left
 Print_Right
 Statement
+
+    read -sn 3 key
+    if [ "$key" = "$DOWN" ]; then
+    echo "DOWN"
+    
+    elif [ "$key" = "$ENTER" ]; then
+    echo "ENTER"
+    fi
+
 tput cup 27 0
