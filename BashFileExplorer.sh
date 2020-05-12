@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Author : Seungho Song(KWU. Software. 2019203037)
-# Last Update : 2020. 05. 13 06:16
+# Last Update : 2020. 05. 13 07:48
 
 #Colors
 #fg(..;**;..) : 30-black / 31-red / 32-green / 33-brown / 34-blue
@@ -14,6 +14,9 @@ declare GREEN='\033[0;32;47m'
 declare BLACK='\033[0;30m'
 declare NC='\033[0m'
 declare BROWN='\033[2;33;47m'
+
+#for cursor
+declare CUR='\033[0;44m'
 
 #background with black foreground
 declare GRAYB='\033[0;30;47m'
@@ -32,12 +35,18 @@ declare ENTER=""
 declare -a D_array1; declare -a D_array2; declare -a D_array3
 declare -a X_array1; declare -a X_array2; declare -a X_array3
 declare -a F_array1; declare -a F_array2; declare -a F_array3
-declare -a Total
+declare -a Total1;declare -a Total2;declare -a Total3;
 
 # Basic Utility functions
 
 function Coloring() {
     printf "$1"; echo "$2"; printf "${NC}"
+    declare original_color=$1
+    declare str=$2
+}
+function ChangeColoring() {
+    printf "$2"; echo "$1"; printf "${NC}"
+    declare letter=`echo "$1"`
 }
 
 function Tree() { 
@@ -145,7 +154,7 @@ function Print_Left() {
     unset D_array1; unset D_array2; unset D_array3;
     unset X_array1; unset X_array2; unset X_array3;
     unset F_array1; unset F_array2; unset F_array3;
-    unset Total
+    
 
     for (( i=3;i<=22;i++ )) #save in each array
     do
@@ -172,7 +181,9 @@ function Print_Left() {
         fi
     done
 
-    Total+=(${D_array1[@]}); Total+=(${X_array1[@]}); Total+=(${F_array1[@]})
+    Total1+=(${D_array1[@]}); Total1+=(${X_array1[@]}); Total1+=(${F_array1[@]})
+    Total2+=(${D_array2[@]}); Total2+=(${X_array2[@]}); Total2+=(${F_array2[@]})
+    Total3+=(${D_array3[@]}); Total3+=(${X_array3[@]}); Total3+=(${F_array3[@]})
     #echo "${Total[0]}"
 
     for (( i=0;i<${#D_array1[@]};i++)) #Directory Print
@@ -200,35 +211,77 @@ function Print_Left() {
 
     for (( i=0;i<${#X_array1[@]};i++)) #Execute file print
     do
-        printf "${GREEN}" #for Exectue files
+         #for Exectue files
         num=${flag:=2}+$i+1
         tput cup ${num} 1
-        echo "${X_array1[$i]}"
+        Coloring $GREEN ${X_array1[$i]}
 
         tput cup ${num} 18
-        echo "${X_array2[$i]}"
+        Coloring $GREEN ${X_array2[$i]}
 
         tput cup ${num} 35
-        echo "${X_array3[$i]}"
-        printf "${NC}" # End of default fg color
+        Coloring $GREEN ${X_array3[$i]}
+         # End of default fg color
         flag2=$num
     done
 
     for (( i=0;i<${#F_array1[@]};i++)) #Normal files print
     do
-        printf "${GRAYB}" #for normal files
+        #for normal files
 
         num=${flag2:=$flag}+$i+1
         tput cup ${num} 1
-        echo "${F_array1[$i]}"
+        Coloring ${GRAYB} ${F_array1[$i]}
 
         tput cup ${num} 18
-        echo "${F_array2[$i]}"
+        Coloring ${GRAYB} ${F_array2[$i]}
 
         tput cup ${num} 35
-        echo "${F_array3[$i]}"
-        printf "${NC}" # End of default fg color
+        Coloring ${GRAYB} ${F_array3[$i]}
+        # End of default fg color
     done
+#Erase
+        declare -i direc2=`expr $2 + 3`
+        for (( i=1;i<=40;i++ ))
+        do
+            tput cup $direc2 $i
+            Coloring $GRAYB " "
+        done
+        tput cup $direc2 1 # $2: wanna direction to cursor
+        Coloring $GRAYB ${Total1[$2]}
+        
+        tput cup $direc2 18 # $2: wanna direction to cursor
+        Coloring $GRAYB ${Total2[$2]}
+
+        tput cup $direc2 35 # $2: wanna direction to cursor
+        if [ "$direc2" = "3" ] || [ "$direc2" = "4" ]
+        then
+            Coloring $GRAYB "-"
+        else 
+            Coloring $GRAYB ${Total3[$2]}
+        fi
+#Override   
+    declare -i direc=`expr $1 + 3`
+        for (( i=1;i<=40;i++ ))
+        do
+            tput cup $direc $i
+            Coloring $CUR " "
+        done
+        tput cup $direc 1 # $1: wanna direction to cursor
+        Coloring $CUR ${Total1[$1]}
+        
+        tput cup $direc 18 # $1: wanna direction to cursor
+        Coloring $CUR ${Total2[$1]}
+
+        tput cup $direc 35 # $1: wanna direction to cursor
+        if [ "$direc" = "3" ] || [ "$direc" = "4" ]
+        then
+            Coloring $CUR "-"
+        else 
+            Coloring $CUR ${Total3[$1]}
+        fi
+#########################################################
+        
 }
 
 
@@ -426,15 +479,20 @@ function Statement() {
 
 ### Main Command ###
 
+declare -i mouse=0
+
 UI_Design
 Current_pwd
-Print_Left
+Print_Left $mouse
 Print_Right
 Statement
 
     read -sn 3 key
     if [ "$key" = "$DOWN" ]; then
-    echo "DOWN"
+        mouse=`expr $mouse + 1`
+        original=`expr $mouse - 1`
+        Print_Left $mouse $original
+        
     
     elif [ "$key" = "$ENTER" ]; then
     echo "ENTER"
