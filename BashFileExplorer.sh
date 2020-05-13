@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Author : Seungho Song(KWU. Software. 2019203037)
-# Last Update : 2020. 05. 13 07:48
+# Last Update : 2020. 05. 13 14:13
 
 #Colors
 #fg(..;**;..) : 30-black / 31-red / 32-green / 33-brown / 34-blue
@@ -17,6 +17,9 @@ declare BROWN='\033[2;33;47m'
 
 #for cursor
 declare CUR='\033[0;44m'
+declare CUR_G='\033[0;42m'
+declare CUR_B='\033[0;40m'
+
 
 #background with black foreground
 declare GRAYB='\033[0;30;47m'
@@ -35,18 +38,12 @@ declare ENTER=""
 declare -a D_array1; declare -a D_array2; declare -a D_array3
 declare -a X_array1; declare -a X_array2; declare -a X_array3
 declare -a F_array1; declare -a F_array2; declare -a F_array3
-declare -a Total1;declare -a Total2;declare -a Total3;
+declare -a Total1;declare -a Total2;declare -a Total3; declare toggle
 
 # Basic Utility functions
 
 function Coloring() {
     printf "$1"; echo "$2"; printf "${NC}"
-    declare original_color=$1
-    declare str=$2
-}
-function ChangeColoring() {
-    printf "$2"; echo "$1"; printf "${NC}"
-    declare letter=`echo "$1"`
 }
 
 function Tree() { 
@@ -75,8 +72,6 @@ function Repeat_Char() { # Repeat character $2 by $1 times
         printf "${GRAYB}$2${NC}"
     done
 }
-
-
 
 # Functions for UI Design
 
@@ -113,6 +108,22 @@ function BackGround() { # $1: startline / $2: howmanylines? /$3: color
     do
         tput cup $i 0
         echo -e "$3$(Blank 83)${NC}"
+    done
+}
+
+function Clearscreen() { # $1:xpos $2:ypos $3:howmanyx $4:howmanyy
+    local -i whatx=$1; local -i whaty=$2
+    local -i row=$3; local -i col=$4
+    local -i repeatline
+    
+    for (( i=0;i<$row;i++ ))
+    do
+        repeatline=`expr $whatx + $i`
+        tput cup $repeatline $2
+        for (( j=0;j<$col;j++ ))
+        do
+            Coloring $GRAYB " "
+        done
     done
 }
 
@@ -184,6 +195,7 @@ function Print_Left() {
     Total1+=(${D_array1[@]}); Total1+=(${X_array1[@]}); Total1+=(${F_array1[@]})
     Total2+=(${D_array2[@]}); Total2+=(${X_array2[@]}); Total2+=(${F_array2[@]})
     Total3+=(${D_array3[@]}); Total3+=(${X_array3[@]}); Total3+=(${F_array3[@]})
+    Total3[0]="-"; Total3[1]="-"
     #echo "${Total[0]}"
 
     for (( i=0;i<${#D_array1[@]};i++)) #Directory Print
@@ -240,48 +252,95 @@ function Print_Left() {
         Coloring ${GRAYB} ${F_array3[$i]}
         # End of default fg color
     done
-#Erase
+#Recover(Erase)
         declare -i direc2=`expr $2 + 3`
         for (( i=1;i<=40;i++ ))
         do
             tput cup $direc2 $i
-            Coloring $GRAYB " "
+            if [ -d "${Total1[$2]}" ]; then Coloring $BLUE " "
+            elif [ -x "${Total1[$2]}" ]; then Coloring $GREEN " "
+            else Coloring $GRAYB " "
+            fi
         done
         tput cup $direc2 1 # $2: wanna direction to cursor
-        Coloring $GRAYB ${Total1[$2]}
+        if [ -d "${Total1[$2]}" ]; then Coloring $BLUE ${Total1[$2]}
+        elif [ -x "${Total1[$2]}" ]; then Coloring $GREEN ${Total1[$2]}
+        else Coloring $GRAYB ${Total1[$2]}
+        fi
         
         tput cup $direc2 18 # $2: wanna direction to cursor
-        Coloring $GRAYB ${Total2[$2]}
+        if [ -d "${Total1[$2]}" ]; then Coloring $BLUE ${Total2[$2]}
+        elif [ -x "${Total1[$2]}" ]; then Coloring $GREEN ${Total2[$2]}
+        else Coloring $GRAYB ${Total2[$2]}
+        fi
 
         tput cup $direc2 35 # $2: wanna direction to cursor
-        if [ "$direc2" = "3" ] || [ "$direc2" = "4" ]
-        then
-            Coloring $GRAYB "-"
+        if [ -d "${Total1[$2]}" ]; then
+            if [ "$direc" = "3" ] || [ "$direc" = "4" ]; then Coloring $BLUE "-"
+            else
+            Coloring $BLUE ${Total3[$2]}
+            fi
+        
+        elif [ -x "${Total1[$2]}" ]; then
+            if [ "$direc" = "3" ] || [ "$direc" = "4" ]; then Coloring $GREEN "-"
+            else
+            Coloring $GREEN ${Total3[$2]}
+            fi
+
         else 
+            if [ "$direc" = "3" ] || [ "$direc" = "4" ]; then Coloring $GRAYB "-"
+            else
             Coloring $GRAYB ${Total3[$2]}
+            fi
         fi
 #Override   
     declare -i direc=`expr $1 + 3`
         for (( i=1;i<=40;i++ ))
         do
             tput cup $direc $i
-            Coloring $CUR " "
+            if [ -d "${Total1[$1]}" ]; then Coloring $CUR " "
+            elif [ -x "${Total1[$1]}" ]; then Coloring $CUR_G " "
+            else Coloring $CUR_B " "
+            fi
         done
         tput cup $direc 1 # $1: wanna direction to cursor
-        Coloring $CUR ${Total1[$1]}
+        if [ -d "${Total1[$1]}" ]; then Coloring $CUR ${Total1[$1]}
+        elif [ -x "${Total1[$1]}" ]; then Coloring $CUR_G ${Total1[$1]}
+        else Coloring $CUR_B ${Total1[$1]}
+        fi
         
         tput cup $direc 18 # $1: wanna direction to cursor
-        Coloring $CUR ${Total2[$1]}
+        if [ -d "${Total1[$1]}" ]; then Coloring $CUR ${Total2[$1]}
+        toggle="d"
+        elif [ -x "${Total1[$1]}" ]; then Coloring $CUR_G ${Total2[$1]}
+        toggle="x"
+        else Coloring $CUR_B ${Total2[$1]}
+        toggle="f"
+        fi
+        
+        declare rightnow=${Total1[$1]}
+        #declare rightnow_address=$(STR_to_pwd ${Total1[$1]})
 
         tput cup $direc 35 # $1: wanna direction to cursor
-        if [ "$direc" = "3" ] || [ "$direc" = "4" ]
-        then
-            Coloring $CUR "-"
-        else 
+
+        if [ -d "${Total1[$1]}" ]; then
+            if [ "$direc" = "3" ] || [ "$direc" = "4" ]; then Coloring $CUR "-"
+            else
             Coloring $CUR ${Total3[$1]}
-        fi
-#########################################################
+            fi
         
+        elif [ -x "${Total1[$1]}" ]; then
+            if [ "$direc" = "3" ] || [ "$direc" = "4" ]; then Coloring $CUR_G "-"
+            else
+            Coloring $CUR_G ${Total3[$1]}
+            fi
+
+        else 
+            if [ "$direc" = "3" ] || [ "$direc" = "4" ]; then Coloring $CUR_B "-"
+            else
+            Coloring $CUR_B ${Total3[$1]}
+            fi
+        fi
 }
 
 
@@ -447,7 +506,9 @@ function ls_tree() { # $1 : directory name in string type $2:x axls $3: y axls
         #xpos=`expr $xpos + 1`
         
     done
-    cd ..
+    if [ "${testvar}" != "${first_address}" ]; then
+        cd ..
+    fi
 }
 
 
@@ -479,23 +540,54 @@ function Statement() {
 
 ### Main Command ###
 
-declare -i mouse=0
 
-UI_Design
-Current_pwd
-Print_Left $mouse
-Print_Right
-Statement
 
+while [ true ]
+do
+    declare -i mouse=0
+    declare first_address=$(STR_to_pwd "pwd")
+    UI_Design
+    Current_pwd
+    Print_Left $mouse 0
+    Print_Right
+    Statement
+    
     read -sn 3 key
     if [ "$key" = "$DOWN" ]; then
-        mouse=`expr $mouse + 1`
+        if [ "$mouse" -lt "19" ]; then
+            mouse=`expr $mouse + 1`
+        else mouse=19
+        fi
         original=`expr $mouse - 1`
+        Print_Left $mouse ${original}
+    elif [ "$key" = "$UP" ]; then
+        if [ "$mouse" -gt "0" ]; then
+             mouse=`expr $mouse - 1`
+        else mouse=0
+        fi
+        original=`expr $mouse + 1`
         Print_Left $mouse $original
-        
+    #elif [ "$key" = "$RIGHT" ]; then
+    #elif [ "$key" = "$LEFT" ]; then
     
-    elif [ "$key" = "$ENTER" ]; then
-    echo "ENTER"
-    fi
+   elif [ "$key" = "" ]; then
+        
+       if [ "$toggle" = "d" ]; then
+            # Clearscreen 1 1 1 81
+            # Clearscreen 3 1 20 40; Clearscreen 3 42 20 40
+            # Clearscreen 24 1 1 81
+            clear
+            UI_Design
+            mouse=0
+            cd "$rightnow"
+            Current_pwd
+            Print_Left $mouse 0
+            Print_Right
+            Statement
+       else echo "NOT ENTERING"
 
+        fi
+    elif [ "$key" = "q" ]; then break
+    fi
+done
 tput cup 27 0
